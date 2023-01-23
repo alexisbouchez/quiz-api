@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 
+from db import get_db
+from questions import models
 from questions.schemas import Question, QuestionInput
 from quizzes.crud import get_quiz_by_id
 
@@ -7,8 +10,8 @@ questions_router = APIRouter()
 
 
 @questions_router.post("/quizzes/{quiz_id}/questions")
-def create_question(quiz_id: int, create_question_input: QuestionInput) -> list[Question]:
-    quiz = get_quiz_by_id(quiz_id)
+def create_question(quiz_id: int, create_question_input: QuestionInput, db: Session = Depends(get_db)) -> Question:
+    quiz = get_quiz_by_id(quiz_id, db)
     if quiz is None:
         raise HTTPException(404, "Quiz not found")
 
@@ -17,9 +20,23 @@ def create_question(quiz_id: int, create_question_input: QuestionInput) -> list[
         id=len(quiz.questions) + 1
     )
 
-    quiz.questions.append(question)
+    created_question = models.Question(
+        quiz_id=quiz_id,
+        text=create_question_input.text,
+    )
+    db.add(created_question)
+    db.commit()
+    db.refresh(created_question)
 
-    return quiz.questions
+    answers = []
+    for answer_input in question.answers:
+        answers.append(
+            models.Answer(question_id=created_question.id, **answer_input.dict())
+        )
+    db.add_all(answers)
+    db.commit()
+
+    return created_question
 
 
 @questions_router.get("/quizzes/{quiz_id}/questions")

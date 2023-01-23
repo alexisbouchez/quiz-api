@@ -8,6 +8,7 @@ from quizzes.schemas import Quiz, QuizInput
 
 quizzes_router = APIRouter()
 
+
 @quizzes_router.get("/quizzes", response_model=list[schemas.Quiz])
 def read_quizzes(db: Session = Depends(get_db)) -> list[Quiz]:
     return db.query(Quizz).all()
