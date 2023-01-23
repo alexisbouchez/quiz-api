@@ -23,4 +23,4 @@ class Question(Base):
     answers = relationship("Answer", back_populates="question")
 
     quiz_id = Column(Integer, ForeignKey("quizzes.id"))
-    quiz = relationship("Quiz", back_populates="questions")
+    quiz = relationship("Quizz", back_populates="questions")
